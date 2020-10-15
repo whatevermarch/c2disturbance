@@ -21,17 +21,17 @@ sample_dir = bpy.path.abspath( '//../../data/samples' )
 output_dir = bpy.path.abspath( '//../../data/distorted' )
 
 #   setup logging level
-logging.basicConfig( level=logging.INFO )
+#logging.basicConfig( level=logging.DEBUG )
 
 
 #   setup the environment before rendering
 def init():
 
-    logging.info( "Initializing..." )
-    logging.info( "\tNumber of samples : {}".format( N ) )
-    logging.info( "\tRender from frame {} to frame {}".format( frame_start, frame_end ) )
-    logging.info( "\tRetreive samples from : {}".format( sample_dir ) )
-    logging.info( "\tSave outputs to : {}".format( output_dir ) )
+    logging.debug( "Initializing..." )
+    logging.debug( "\tNumber of samples : {}".format( N ) )
+    logging.debug( "\tRender from frame {} to frame {}".format( frame_start, frame_end ) )
+    logging.debug( "\tRetreive samples from : {}".format( sample_dir ) )
+    logging.debug( "\tSave outputs to : {}".format( output_dir ) )
 
     #   define animation frame range to be rendered
     bpy.context.scene.frame_start = frame_start
@@ -47,8 +47,8 @@ def init():
         if cycles_pref.has_active_device():
             break
 
-    logging.info( "Rendering API : {}".format( cycles_pref.compute_device_type ) )
-    logging.info( "Device(s) in use :" )
+    logging.debug( "\tRendering API : {}".format( cycles_pref.compute_device_type ) )
+    logging.debug( "\tDevice(s) in use :" )
         
     #   enable appropriate devices
     #   for CUDA, use all available GPUs except host CPU
@@ -58,19 +58,21 @@ def init():
                 device.use = False
             else:
                 device.use = True
-                logging.info( "\t{}".format( device.name ) )
+                logging.debug( "\t- {}".format( device.name ) )
             
     #   for OPENCL (usually a single-GPU system), enable both CPU and GPU 
     elif cycles_pref.compute_device_type == 'OPENCL':
         for device in cycles_pref.devices:
             device.use = True
-            logging.info( "\t{}".format( device.name ) )
+            logging.debug( "\t- {}".format( device.name ) )
+
+    logging.debug( "" )
 
 
 #   render, ain't nothing else
 def render():
 
-    logging.info( "Start rendering..." )
+    logging.debug( "Start rendering..." )
     
     #   define target texture node
     materials = bpy.data.materials
@@ -90,6 +92,10 @@ def render():
     #   loop all over the required samples
     for sample_idx in range(N):
 
+        logging.debug( "Render sample [{} out of {}]}".format( sample_idx, N ) )
+
+        logging.debug( "\tloading texture..." )
+
         #   load new image
         new_img = images.load( os.path.join( sample_dir, sample_name.format( sample_idx ) ) )
 
@@ -99,6 +105,8 @@ def render():
 
         #   remove used image from the database to save memory space
         images.remove( old_img )
+
+        logging.debug( "\tinitialize animation parameter..." )
 
         #   setup W-param for this sample
         #   randomize the initial values
@@ -118,13 +126,19 @@ def render():
         musgrave_2.inputs[1].default_value = m2_end
         musgrave_2.inputs[1].keyframe_insert( data_path="default_value" )
 
+        logging.debug( "\trender..." )
+
         #   set the output subdirectory by sample index
         scene.render.filepath = os.path.join( output_dir, sample_idx, "" )
 
         #   render animation
         bpy.ops.render.render( animation=True, write_still=True )
 
+        logging.debug( "Sample [{}] completed!".format( sample_idx ) )
+
+    logging.debug( "" )
+
 
 if __name__ == "__main__":
     init()
-    #render()
+    render()
