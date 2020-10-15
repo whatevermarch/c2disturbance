@@ -1,0 +1,1 @@
+blender -b ./water_noise.blend -P ./scripts/main_render.py
