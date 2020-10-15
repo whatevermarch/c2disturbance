@@ -92,7 +92,7 @@ def render():
     #   loop all over the required samples
     for sample_idx in range(N):
 
-        logging.debug( "Render sample [{} out of {}]}".format( sample_idx, N ) )
+        logging.debug( "Render sample [{} out of {}]".format( sample_idx, N ) )
 
         logging.debug( "\tloading texture..." )
 
