@@ -99,7 +99,7 @@ def render():
     #   loop all over the required samples
     for sample_idx in range( sample_start, sample_end + 1 ):
 
-        print( "Rendering sample [{} out of {}]...".format( sample_idx - sample_start, num_samples ) )
+        print( "Rendering sample [{} out of {}]...".format( sample_idx - sample_start + 1, num_samples ) )
 
         #   start the timer
         t_start = time.process_time()
