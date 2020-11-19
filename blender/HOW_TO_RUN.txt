@@ -1,2 +1,6 @@
-#   EX. to run with sample 0 - 9 and frame 1 - 100
-blender -b ./water_noise.blend -P ./scripts/main_render.py --samples 0 9 --frames 1 100
+#   EX. to test with sample 0 - 1 and frame 1 - 3
+blender -b ./water_noise.blend -P ./scripts/main_render.py
+
+#   EX. to run with sample 0 - 9 and frame 1 - 100 
+#   ( '--' after script file path is very important if script arguments are going to be determined )
+blender -b ./water_noise.blend -P ./scripts/main_render.py -- --samples 0 9 --frames 1 100

@@ -1,18 +1,26 @@
 import bpy
+import sys
 import os.path
 import logging
 import time
 import argparse
 
-import device
-import anim
+#   import custom modules
+import importlib.util
+spec_dev = importlib.util.spec_from_file_location("module.name", "./scripts/device.py")
+device = importlib.util.module_from_spec(spec_dev)
+spec_dev.loader.exec_module(device)
+
+spec_anim = importlib.util.spec_from_file_location("module.name", "./scripts/anim.py")
+anim = importlib.util.module_from_spec(spec_anim)
+spec_anim.loader.exec_module(anim)
 
 
 #   sample file expression to be formatted later
 sample_name = "{:03d}.png"
 
 #   setup logging level
-logging.basicConfig( level=logging.DEBUG )
+#logging.basicConfig( level=logging.DEBUG )
 
 
 #   substitute texture by the new one with corresponding sample index
@@ -33,7 +41,7 @@ def change_texture( db_img, node_texture, s_dir, s_idx ):
 #   setup the environment before rendering
 def init( f_start, f_end ):
 
-    print( ">>>>>\tStart initializing\t>>>>>" )
+    print( ">>>>>\tStart initializing" )
 
     #   define animation frame range to be rendered
     anim.set_target_frame( f_start, f_end )
@@ -45,7 +53,7 @@ def init( f_start, f_end ):
 #   render, ain't nothing else
 def render( s_start, s_end, s_dir, o_dir ):
 
-    print( ">>>>>\tStart rendering\t>>>>>" )
+    print( ">>>>>\tStart rendering" )
 
     #   define target texture node
     materials = bpy.data.materials
@@ -138,7 +146,11 @@ if __name__ == "__main__":
     parser.add_argument( '--frames', type=int, nargs=2, default=[ 1, 3 ],
             help='target frame range [first last], default is 1 -> 3' )
 
-    args = parser.parse_args()
+    if '--' in sys.argv:
+        args = parser.parse_args( sys.argv[sys.argv.index('--') + 1:] )
+    else:
+        args = parser.parse_args( [] )
+
     frame_start, frame_end = args.frames
     sample_start, sample_end = args.samples
     sample_dir = os.path.abspath( bpy.path.abspath( '//' + args.sample_dir ) )
