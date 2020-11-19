@@ -1,1 +1,2 @@
-blender -b ./water_noise.blend -P ./scripts/main_render.py
+#   EX. to run with sample 0 - 9 and frame 1 - 100
+blender -b ./water_noise.blend -P ./scripts/main_render.py --samples 0 9 --frames 1 100
