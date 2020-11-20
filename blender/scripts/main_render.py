@@ -24,7 +24,10 @@ sample_name = "{:03d}.png"
 
 
 #   substitute texture by the new one with corresponding sample index
-def change_texture( db_img, node_texture, s_dir, s_idx ):
+def change_texture( node_texture, s_dir, s_idx ):
+
+    #   define image database in .blend file
+    db_img = bpy.data.images
 
     #   load new image
     new_img = db_img.load( os.path.join( s_dir, sample_name.format( s_idx ) ), check_existing=False )
@@ -37,6 +40,23 @@ def change_texture( db_img, node_texture, s_dir, s_idx ):
     if old_img != None:
         db_img.remove( old_img )
 
+#   render UNDISTORTED version
+def render_undistorted( scene, s_idx, o_dir ):
+
+    #   set the output subdirectory by sample index
+    scene.render.filepath = os.path.join( o_dir, "undistorted", str( s_idx ) )
+
+    #   render single frame
+    bpy.ops.render.render( write_still=True )
+
+#   render DISTORTED version
+def render_distorted( scene, s_idx, o_dir ):
+
+    #   set the output subdirectory by sample index
+    scene.render.filepath = os.path.join( o_dir, "distorted", str( s_idx ), "###" )
+
+    #   render animation
+    bpy.ops.render.render( animation=True, write_still=True )
 
 #   setup the environment before rendering
 def init( f_start, f_end ):
@@ -49,21 +69,18 @@ def init( f_start, f_end ):
     #   set render device on scene settings
     device.customize()
 
-
 #   render, ain't nothing else
 def render( s_start, s_end, s_dir, o_dir ):
 
+    assert s_start <= s_end, "First sample is not followed by last sample."
+    assert s_start >= 0, "First sample index cannot be lower than 0."
+
     print( ">>>>>\tStart rendering" )
 
-    #   define target texture node
-    materials = bpy.data.materials
-    tex_node = materials['Material.Text'].node_tree.nodes["Image Texture"]
-
-    #   define image database in .blend file
-    images = bpy.data.images
-
     #   define references to material nodes
-    mat_water = bpy.data.materials['Material.Water']
+    materials = bpy.data.materials
+    node_tex = materials['Material.Text'].node_tree.nodes["Image Texture"]
+    mat_water = materials['Material.Water']
     node_musgrave_1 = mat_water.node_tree.nodes["Musgrave Texture"]
     node_musgrave_2 = mat_water.node_tree.nodes["Musgrave Texture.001"]
     node_mix = mat_water.node_tree.nodes["Mix"]
@@ -90,35 +107,27 @@ def render( s_start, s_end, s_dir, o_dir ):
         logging.debug( "Loading texture..." )
 
         #   load new image
-        change_texture( images, tex_node, s_dir, s_idx )
+        change_texture( node_tex, s_dir, s_idx )
 
         logging.debug( "Initialize animation parameter..." )
 
         #   setup W-param for this sample
-        anim.setup_keyframe_musgrave( node_musgrave_1, node_musgrave_2 )
+        anim.setup_musgrave( node_musgrave_1, node_musgrave_2 )
 
         logging.debug( "Render..." )
 
-        #   render undistorted version first
         #   unlink musgrave texture (displacement controller)
         if node_mix.outputs[0].is_linked:
             mat_water.node_tree.links.remove( node_mix.outputs[0].links[0] )
 
-        #   set the output subdirectory by sample index
-        scene.render.filepath = os.path.join( o_dir, "undistorted", str( s_idx ) )
+        #   render undistorted version first
+        render_undistorted( scene, s_idx, o_dir )
 
-        #   render single frame
-        bpy.ops.render.render( write_still=True )
-        
-        #   then render distorted version
         #   relink musgrave texture
         mat_water.node_tree.links.new( node_mix.outputs[0], node_out.inputs[2] )
-
-        #   set the output subdirectory by sample index
-        scene.render.filepath = os.path.join( o_dir, "distorted", str( s_idx ), "###" )
-
-        #   render animation
-        bpy.ops.render.render( animation=True, write_still=True )
+        
+        #   then render distorted version
+        render_distorted( scene, s_idx, o_dir )
 
         #   stop the timer, and calculate exec. time per sample
         t_end = time.process_time()

@@ -3,24 +3,26 @@ import random
 import logging
 
 #   set the minimum and maximum offset of W-value
-w_init_min = 10.0
-w_init_max = 90.0
-w_offset_min = 3.0
-w_offset_max = 9.0
+w_init_min = -50.0
+w_init_max = 50.0
+w_offset_min = 1.8
+w_offset_max = 3.2
 
 #   define animation frame range to be rendered
-def set_target_frame( first, last ):
+def set_target_frame( f_start, f_end ):
 
-    assert( first <= last )
+    assert f_start <= f_end, "First frame is not followed by last frame."
+    assert f_start >= 1, "First frame cannot be lower than 1."
+    assert f_end <= 100, "Last frame cannot exceed 100."
 
-    logging.debug( "Render frame {} -> {}".format( first, last ) )
+    logging.debug( "Render frame {} -> {}".format( f_start, f_end ) )
 
-    bpy.context.scene.frame_start = first
-    bpy.context.scene.frame_end = last
+    bpy.context.scene.frame_start = f_start
+    bpy.context.scene.frame_end = f_end
 
 
 #   setup keyframe parameters FOR musgrave texture nodes
-def setup_keyframe_musgrave( node_1, node_2 ):
+def setup_musgrave( node_1, node_2 ):
         
     #   random W-param for this sample
     m1_start = random.uniform( w_init_min, w_init_max )
