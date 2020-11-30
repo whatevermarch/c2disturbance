@@ -2,11 +2,17 @@ import bpy
 import random
 import logging
 
+
 #   set the minimum and maximum offset of W-value
 w_init_min = -50.0
 w_init_max = 50.0
-w_offset_min = 1.8
-w_offset_max = 3.2
+w_offset_min = 1.5
+w_offset_max = 2.8
+
+#   set the range of scale for coarse wave
+scale_c_min = 3.2
+scale_c_max = 8.0
+
 
 #   define animation frame range to be rendered
 def set_target_frame( f_start, f_end ):
@@ -45,5 +51,15 @@ def setup_musgrave( node_1, node_2 ):
     #   reset target frame number
     bpy.context.scene.frame_set( 1 )
 
-    logging.debug( "\tMusgrave[0] : {:.4f} -> {:.4f} ".format( m1_start, m1_end ) )
-    logging.debug( "\tMusgrave[1] : {:.4f} -> {:.4f} ".format( m2_start, m2_end ) )
+    logging.debug( "\tMusgrave[0].W : {:.4f} -> {:.4f}".format( m1_start, m1_end ) )
+    logging.debug( "\tMusgrave[1].W : {:.4f} -> {:.4f}".format( m2_start, m2_end ) )
+
+    #   control scale param
+    scale_c = random.uniform( scale_c_min, scale_c_max )
+    scale_offset = ( scale_c_max - scale_c ) / ( scale_c_max - scale_c_min ) * 0.8 + 2.7
+    scale_f = random.gauss( scale_c + scale_offset, 0.25 ) #  approx. by chebyshev's inequality
+    node_1.inputs[2].default_value = scale_c
+    node_2.inputs[2].default_value = scale_f
+
+    logging.debug( "\tMusgrave[0].Scale : {:.4f}".format( scale_c ) )
+    logging.debug( "\tMusgrave[1].Scale : {:.4f}".format( scale_f ) )

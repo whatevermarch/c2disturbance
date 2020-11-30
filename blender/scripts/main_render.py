@@ -40,6 +40,7 @@ def change_texture( node_texture, s_dir, s_idx ):
     if old_img != None:
         db_img.remove( old_img )
 
+
 #   render UNDISTORTED version
 def render_undistorted( scene, s_idx, o_dir ):
 
@@ -49,6 +50,7 @@ def render_undistorted( scene, s_idx, o_dir ):
     #   render single frame
     bpy.ops.render.render( write_still=True )
 
+
 #   render DISTORTED version
 def render_distorted( scene, s_idx, o_dir ):
 
@@ -57,6 +59,7 @@ def render_distorted( scene, s_idx, o_dir ):
 
     #   render animation
     bpy.ops.render.render( animation=True, write_still=True )
+
 
 #   setup the environment before rendering
 def init( f_start, f_end ):
@@ -68,6 +71,7 @@ def init( f_start, f_end ):
     
     #   set render device on scene settings
     device.customize()
+
 
 #   render, ain't nothing else
 def render( s_start, s_end, s_dir, o_dir ):
