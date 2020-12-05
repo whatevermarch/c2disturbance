@@ -28,7 +28,7 @@ def set_target_frame( f_start, f_end ):
 
 
 #   setup keyframe parameters FOR musgrave texture nodes
-def setup_musgrave( node_1, node_2 ):
+def setup_musgrave( node_1, node_2, wave_scale=0.0 ):
         
     #   random W-param for this sample
     m1_start = random.uniform( w_init_min, w_init_max )
@@ -55,7 +55,7 @@ def setup_musgrave( node_1, node_2 ):
     logging.debug( "\tMusgrave[1].W : {:.4f} -> {:.4f}".format( m2_start, m2_end ) )
 
     #   control scale param
-    scale_c = random.uniform( scale_c_min, scale_c_max )
+    scale_c = random.uniform( scale_c_min, scale_c_max ) if wave_scale == 0.0 else wave_scale
     scale_offset = ( scale_c_max - scale_c ) / ( scale_c_max - scale_c_min ) * 0.8 + 2.7
     scale_f = random.gauss( scale_c + scale_offset, 0.25 ) #  approx. by chebyshev's inequality
     node_1.inputs[2].default_value = scale_c

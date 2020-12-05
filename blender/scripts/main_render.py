@@ -66,7 +66,7 @@ def render_distorted( scene, s_idx, o_dir ):
 
 
 #   setup the environment before rendering
-def init( f_start, f_end ):
+def init( f_start, f_end, gpu_id ):
 
     print( ">>>>>\tStart initializing" )
 
@@ -74,11 +74,11 @@ def init( f_start, f_end ):
     anim.set_target_frame( f_start, f_end )
     
     #   set render device on scene settings
-    device.customize()
+    device.customize( gpu_id )
 
 
 #   render, ain't nothing else
-def render( s_start, s_end, s_dir, o_dir ):
+def render( s_start, s_end, s_dir, o_dir, wave_scale ):
 
     assert s_start <= s_end, "First sample is not followed by last sample."
     assert s_start >= 0, "First sample index cannot be lower than 0."
@@ -120,7 +120,7 @@ def render( s_start, s_end, s_dir, o_dir ):
         logging.debug( "Initialize animation parameter..." )
 
         #   setup W-param for this sample
-        anim.setup_musgrave( node_musgrave_1, node_musgrave_2 )
+        anim.setup_musgrave( node_musgrave_1, node_musgrave_2, wave_scale )
 
         logging.debug( "Render..." )
 
@@ -154,16 +154,26 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser( description=\
         'This script is to generate distortion on many image samples to feed to ML model afterwards.' )
 
-    parser.add_argument( '--sample_dir', type=str, default='../../data/samples',
-            help='directory containing sample images (with format ###.png), default is ../../data/samples' )
-    parser.add_argument( '--output_dir', type=str, default='../../data',
-            help='directory to place output images (in distorted/undistorted directories), default is ../../data' )
-    # parser.add_argument( '--samples', type=int, nargs=2, default=[ 0, 1 ],
-    #         help='sample index range [first last], default is 0 -> 1' )
+    #   for image downloader
     parser.add_argument( '--num_samples', type=int, default=2,
-            help='number of samples to be processed, default is 2' )
+            help='number of samples to be downloaded and processed, default is 2.' )
+    parser.add_argument( '--sample_dir', type=str, default='../../data/samples',
+            help='directory containing sample images (with format ###.png), default is ../../data/samples.' )
+    
+    #   for image distorter (Blender)
     parser.add_argument( '--frames', type=int, nargs=2, default=[ 1, 3 ],
-            help='target frame range [first last], default is 1 -> 3' )
+            help='target frame range [first last], default is 1 -> 3.' )   
+    parser.add_argument( '--samples', type=int, nargs=2, default=[ 0, 1 ],
+            help='sample index range [first last], default is 0 -> 1.' )
+    parser.add_argument( '--wave_scale', type=float, default=0.0,
+            help='scale of wave that distort the view. recommended values are between 3.2 - 8.0. \
+                    this will be applied to **ALL** samples. if you are not certain, \
+                    leave this parameter to let the script properly randomize for **EACH** sample.' )
+    parser.add_argument( '--gpu_id', type=int, default=-1,
+            help='(CUDA only) gpu id to be used (will use this gpu only), use all that is available if not specified. \
+                    No effect on non-NVIDIA system' )
+    parser.add_argument( '--output_dir', type=str, default='../../data',
+            help='directory to place output images (in distorted/undistorted directories), default is ../../data.' )
 
     if '--' in sys.argv:
         args = parser.parse_args( sys.argv[sys.argv.index('--') + 1:] )
@@ -177,10 +187,10 @@ if __name__ == "__main__":
     imgdl.downloadSamples( num_samples, sample_dir )
 
     frame_start, frame_end = args.frames
-    # sample_start, sample_end = args.samples
-    sample_start, sample_end = ( 0, num_samples - 1 )
-    
+    sample_start, sample_end = args.samples
+    wave_scale = args.wave_scale
+    gpu_id = args.gpu_id
     output_dir = os.path.abspath( bpy.path.abspath( '//' + args.output_dir ) )
 
-    init( frame_start, frame_end )
-    render( sample_start, sample_end, sample_dir, output_dir )
+    init( frame_start, frame_end, gpu_id )
+    render( sample_start, sample_end, sample_dir, output_dir, wave_scale )
