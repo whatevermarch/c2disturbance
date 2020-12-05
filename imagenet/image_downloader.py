@@ -1,5 +1,6 @@
 import os
 import urllib.request
+import random
 from PIL import Image
 
 WordNet_ID_page = urllib.request.urlopen('http://www.image-net.org/api/text/imagenet.synset.obtain_synset_list')
@@ -13,6 +14,7 @@ def getWNIDPage():
         decoded_line = line.decode("utf-8").strip()
         if len(decoded_line) > 5:
             WordNet_ID_list.append(decoded_line)
+    random.shuffle(WordNet_ID_list)  # randomize the WordNet_ID_list
     print("Successfully created the WordNet_ID list which contains elements : {} ".format(len(WordNet_ID_list)))
 
 
@@ -25,6 +27,7 @@ def createURLsList(word_net_id):
         decoded_line = line.decode("utf-8")
         if len(decoded_line) > 3:
             URLs_list.append(decoded_line)
+    random.shuffle(URLs_list)  # randomize the URLs_list
     print("Successfully fetched {} links from the '{}' WordNet_ID".format(len(URLs_list), word_net_id))
 
 
@@ -106,8 +109,7 @@ def downloadSamples(num_downloaded_img, output_path):
 
 
 if __name__ == '__main__':
-    num_downloaded_img = 100  # number of samples to be downloaded
+    num_downloaded_img = 1000  # number of samples to be downloaded
     output_path = '../../data/samples'  # output folder path
     getWNIDPage()  # to be executed only one time to initialize the lists needed to generate Links
-    main(num_downloaded_img, output_path)  # to be executed as many as we want samples and there is
-'''
+    main(num_downloaded_img, output_path)  # to be executed as many as we want samples and there is'''
