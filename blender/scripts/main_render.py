@@ -15,13 +15,11 @@ spec_anim = importlib.util.spec_from_file_location("module.name", "./scripts/ani
 anim = importlib.util.module_from_spec(spec_anim)
 spec_anim.loader.exec_module(anim)
 
-
 #   sample file expression to be formatted later
 sample_name = "{:03d}.png"
 
 #   setup logging level
 #logging.basicConfig( level=logging.DEBUG )
-
 
 #   substitute texture by the new one with corresponding sample index
 def change_texture( node_texture, s_dir, s_idx ):
@@ -40,7 +38,6 @@ def change_texture( node_texture, s_dir, s_idx ):
     if old_img != None:
         db_img.remove( old_img )
 
-
 #   render UNDISTORTED version
 def render_undistorted( scene, s_idx, o_dir ):
 
@@ -49,7 +46,6 @@ def render_undistorted( scene, s_idx, o_dir ):
 
     #   render single frame
     bpy.ops.render.render( write_still=True )
-
 
 #   render DISTORTED version
 def render_distorted( scene, s_idx, o_dir ):
@@ -60,21 +56,19 @@ def render_distorted( scene, s_idx, o_dir ):
     #   render animation
     bpy.ops.render.render( animation=True, write_still=True )
 
-
 #   setup the environment before rendering
-def init( f_start, f_end ):
+def init( f_start, f_end, gpu_id ):
 
     print( ">>>>>\tStart initializing" )
 
     #   define animation frame range to be rendered
     anim.set_target_frame( f_start, f_end )
-    
-    #   set render device on scene settings
-    device.customize()
 
+    #   set render device on scene settings
+    device.customize( gpu_id )
 
 #   render, ain't nothing else
-def render( s_start, s_end, s_dir, o_dir ):
+def render( s_start, s_end, s_dir, o_dir, wave_scale ):
 
     assert s_start <= s_end, "First sample is not followed by last sample."
     assert s_start >= 0, "First sample index cannot be lower than 0."
@@ -116,7 +110,7 @@ def render( s_start, s_end, s_dir, o_dir ):
         logging.debug( "Initialize animation parameter..." )
 
         #   setup W-param for this sample
-        anim.setup_musgrave( node_musgrave_1, node_musgrave_2 )
+        anim.setup_musgrave( node_musgrave_1, node_musgrave_2, wave_scale )
 
         logging.debug( "Render..." )
 
@@ -129,7 +123,7 @@ def render( s_start, s_end, s_dir, o_dir ):
 
         #   relink musgrave texture
         mat_water.node_tree.links.new( node_mix.outputs[0], node_out.inputs[2] )
-        
+
         #   then render distorted version
         render_distorted( scene, s_idx, o_dir )
 
@@ -144,7 +138,6 @@ def render( s_start, s_end, s_dir, o_dir ):
 
     logging.debug( "Results available at : {}".format( o_dir ) )
 
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser( description=\
@@ -157,7 +150,14 @@ if __name__ == "__main__":
     parser.add_argument( '--samples', type=int, nargs=2, default=[ 0, 1 ],
             help='sample index range [first last], default is 0 -> 1' )
     parser.add_argument( '--frames', type=int, nargs=2, default=[ 1, 3 ],
-            help='target frame range [first last], default is 1 -> 3' )
+            help='target frame range [first last], default is 1 -> 3.' )
+    parser.add_argument( '--wave_scale', type=float, default=0.0,
+            help='scale of wave that distort the view. recommended values are between 3.2 - 8.0. \
+                    this will be applied to **ALL** samples. if you are not certain, \
+                    leave this parameter to let the script properly randomize for **EACH** sample.' )
+    parser.add_argument( '--gpu_id', type=int, default=-1,
+            help='(CUDA only) gpu id to be used (will use this gpu only), use all that is available if not specified. \
+                    No effect on non-NVIDIA system' )
 
     if '--' in sys.argv:
         args = parser.parse_args( sys.argv[sys.argv.index('--') + 1:] )
@@ -167,7 +167,9 @@ if __name__ == "__main__":
     frame_start, frame_end = args.frames
     sample_start, sample_end = args.samples
     sample_dir = os.path.abspath( bpy.path.abspath( '//' + args.sample_dir ) )
+    wave_scale = args.wave_scale
+    gpu_id = args.gpu_id
     output_dir = os.path.abspath( bpy.path.abspath( '//' + args.output_dir ) )
 
-    init( frame_start, frame_end )
-    render( sample_start, sample_end, sample_dir, output_dir )
+    init( frame_start, frame_end, gpu_id )
+    render( sample_start, sample_end, sample_dir, output_dir, wave_scale )
