@@ -79,7 +79,7 @@ def downloadSamples(num_downloaded_img, output_path):
             print("WordNet ID list has elements {} left ".format(len(WordNet_ID_list)))
         url = URLs_list.pop()  # get URL to download the image
         try:
-            img_name = f"{valid_images}.jpg"  # create the image name
+            img_name = f"{valid_images:04d}.jpg"  # create the image name
             urllib.request.urlretrieve(url, output_path + img_name)  # get the image and save it
             try:
                 width, height = verifyImage(img_name, output_path)  # verify the image and get width & height for check

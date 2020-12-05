@@ -21,7 +21,9 @@ spec_imgdl.loader.exec_module(imgdl)
 
 
 #   sample file expression to be formatted later
-sample_name = "{:03d}.png"
+# sample_name = "{:03d}.png"
+sample_name_format = "{:04d}"
+sample_name_ext = ".jpg"
 
 #   setup logging level
 #logging.basicConfig( level=logging.DEBUG )
@@ -34,7 +36,7 @@ def change_texture( node_texture, s_dir, s_idx ):
     db_img = bpy.data.images
 
     #   load new image
-    new_img = db_img.load( os.path.join( s_dir, sample_name.format( s_idx ) ), check_existing=False )
+    new_img = db_img.load( os.path.join( s_dir, sample_name_format.format( s_idx ) + sample_name_ext ), check_existing=False )
 
     #   replace the existing image
     old_img = node_texture.image
@@ -49,7 +51,7 @@ def change_texture( node_texture, s_dir, s_idx ):
 def render_undistorted( scene, s_idx, o_dir ):
 
     #   set the output subdirectory by sample index
-    scene.render.filepath = os.path.join( o_dir, "undistorted", str( s_idx ) )
+    scene.render.filepath = os.path.join( o_dir, "undistorted", sample_name_format.format( s_idx ) )
 
     #   render single frame
     bpy.ops.render.render( write_still=True )
@@ -59,7 +61,7 @@ def render_undistorted( scene, s_idx, o_dir ):
 def render_distorted( scene, s_idx, o_dir ):
 
     #   set the output subdirectory by sample index
-    scene.render.filepath = os.path.join( o_dir, "distorted", str( s_idx ), "###" )
+    scene.render.filepath = os.path.join( o_dir, "distorted", sample_name_format.format( s_idx ), "####" )
 
     #   render animation
     bpy.ops.render.render( animation=True, write_still=True )
@@ -183,6 +185,7 @@ if __name__ == "__main__":
     num_samples = args.num_samples
     sample_dir = os.path.abspath( bpy.path.abspath( '//' + args.sample_dir ) )
 
+    #   run image dowmloader
     imgdl.getWNIDPage()
     imgdl.downloadSamples( num_samples, sample_dir )
 
@@ -192,5 +195,6 @@ if __name__ == "__main__":
     gpu_id = args.gpu_id
     output_dir = os.path.abspath( bpy.path.abspath( '//' + args.output_dir ) )
 
+    #   run image distorter (Blender)
     init( frame_start, frame_end, gpu_id )
     render( sample_start, sample_end, sample_dir, output_dir, wave_scale )
