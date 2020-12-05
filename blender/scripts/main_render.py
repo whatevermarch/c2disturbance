@@ -15,6 +15,10 @@ spec_anim = importlib.util.spec_from_file_location("module.name", "./scripts/ani
 anim = importlib.util.module_from_spec(spec_anim)
 spec_anim.loader.exec_module(anim)
 
+spec_imgdl = importlib.util.spec_from_file_location("module.name", "../imagenet/image_downloader.py")
+imgdl = importlib.util.module_from_spec(spec_imgdl)
+spec_imgdl.loader.exec_module(imgdl)
+
 
 #   sample file expression to be formatted later
 sample_name = "{:03d}.png"
@@ -154,8 +158,10 @@ if __name__ == "__main__":
             help='directory containing sample images (with format ###.png), default is ../../data/samples' )
     parser.add_argument( '--output_dir', type=str, default='../../data',
             help='directory to place output images (in distorted/undistorted directories), default is ../../data' )
-    parser.add_argument( '--samples', type=int, nargs=2, default=[ 0, 1 ],
-            help='sample index range [first last], default is 0 -> 1' )
+    # parser.add_argument( '--samples', type=int, nargs=2, default=[ 0, 1 ],
+    #         help='sample index range [first last], default is 0 -> 1' )
+    parser.add_argument( '--num_samples', type=int, default=2,
+            help='number of samples to be processed, default is 2' )
     parser.add_argument( '--frames', type=int, nargs=2, default=[ 1, 3 ],
             help='target frame range [first last], default is 1 -> 3' )
 
@@ -164,9 +170,16 @@ if __name__ == "__main__":
     else:
         args = parser.parse_args( [] )
 
-    frame_start, frame_end = args.frames
-    sample_start, sample_end = args.samples
+    num_samples = args.num_samples
     sample_dir = os.path.abspath( bpy.path.abspath( '//' + args.sample_dir ) )
+
+    imgdl.getWNIDPage()
+    imgdl.downloadSamples( num_samples, sample_dir )
+
+    frame_start, frame_end = args.frames
+    # sample_start, sample_end = args.samples
+    sample_start, sample_end = ( 0, num_samples - 1 )
+    
     output_dir = os.path.abspath( bpy.path.abspath( '//' + args.output_dir ) )
 
     init( frame_start, frame_end )
