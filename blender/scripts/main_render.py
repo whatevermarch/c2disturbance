@@ -16,7 +16,7 @@ anim = importlib.util.module_from_spec(spec_anim)
 spec_anim.loader.exec_module(anim)
 
 #   sample file expression to be formatted later
-sample_name = "{:03d}.png"
+sample_name = "{:03d}.jpg"
 
 #   setup logging level
 #logging.basicConfig( level=logging.DEBUG )
