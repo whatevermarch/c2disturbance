@@ -19,6 +19,9 @@ spec_imgdl = importlib.util.spec_from_file_location("module.name", "../imagenet/
 imgdl = importlib.util.module_from_spec(spec_imgdl)
 spec_imgdl.loader.exec_module(imgdl)
 
+# import blender.scripts.device as device
+# import blender.scripts.anim as anim
+# import imagenet.image_downloader as imgdl
 
 #   sample file expression to be formatted later
 # sample_name = "{:03d}.png"
