@@ -2,7 +2,6 @@ import bpy
 import random
 import logging
 
-
 #   set the minimum and maximum offset of W-value
 w_init_min = -50.0
 w_init_max = 50.0
@@ -12,7 +11,6 @@ w_offset_max = 2.8
 #   set the range of scale for coarse wave
 scale_c_min = 3.2
 scale_c_max = 8.0
-
 
 #   define animation frame range to be rendered
 def set_target_frame( f_start, f_end ):
@@ -25,7 +23,6 @@ def set_target_frame( f_start, f_end ):
 
     bpy.context.scene.frame_start = f_start
     bpy.context.scene.frame_end = f_end
-
 
 #   setup keyframe parameters FOR musgrave texture nodes
 def setup_musgrave( node_1, node_2, wave_scale=0.0 ):

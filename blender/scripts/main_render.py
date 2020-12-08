@@ -1,4 +1,5 @@
 import bpy
+
 import sys
 import os.path
 import logging
@@ -15,22 +16,12 @@ spec_anim = importlib.util.spec_from_file_location("module.name", "./scripts/ani
 anim = importlib.util.module_from_spec(spec_anim)
 spec_anim.loader.exec_module(anim)
 
-spec_imgdl = importlib.util.spec_from_file_location("module.name", "../imagenet/image_downloader.py")
-imgdl = importlib.util.module_from_spec(spec_imgdl)
-spec_imgdl.loader.exec_module(imgdl)
-
-# import blender.scripts.device as device
-# import blender.scripts.anim as anim
-# import imagenet.image_downloader as imgdl
-
 #   sample file expression to be formatted later
-# sample_name = "{:03d}.png"
 sample_name_format = "{:04d}"
 sample_name_ext = ".jpg"
 
 #   setup logging level
 #logging.basicConfig( level=logging.DEBUG )
-
 
 #   substitute texture by the new one with corresponding sample index
 def change_texture( node_texture, s_dir, s_idx ):
@@ -49,7 +40,6 @@ def change_texture( node_texture, s_dir, s_idx ):
     if old_img != None:
         db_img.remove( old_img )
 
-
 #   render UNDISTORTED version
 def render_undistorted( scene, s_idx, o_dir ):
 
@@ -58,7 +48,6 @@ def render_undistorted( scene, s_idx, o_dir ):
 
     #   render single frame
     bpy.ops.render.render( write_still=True )
-
 
 #   render DISTORTED version
 def render_distorted( scene, s_idx, o_dir ):
@@ -69,7 +58,6 @@ def render_distorted( scene, s_idx, o_dir ):
     #   render animation
     bpy.ops.render.render( animation=True, write_still=True )
 
-
 #   setup the environment before rendering
 def init( f_start, f_end, gpu_id ):
 
@@ -77,10 +65,15 @@ def init( f_start, f_end, gpu_id ):
 
     #   define animation frame range to be rendered
     anim.set_target_frame( f_start, f_end )
+<<<<<<< HEAD
     
     #   set render device on scene settings
     device.customize( gpu_id )
+=======
+>>>>>>> nikita
 
+    #   set render device on scene settings
+    device.customize( gpu_id )
 
 #   render, ain't nothing else
 def render( s_start, s_end, s_dir, o_dir, wave_scale ):
@@ -138,7 +131,7 @@ def render( s_start, s_end, s_dir, o_dir, wave_scale ):
 
         #   relink musgrave texture
         mat_water.node_tree.links.new( node_mix.outputs[0], node_out.inputs[2] )
-        
+
         #   then render distorted version
         render_distorted( scene, s_idx, o_dir )
 
@@ -153,7 +146,6 @@ def render( s_start, s_end, s_dir, o_dir, wave_scale ):
 
     logging.debug( "Results available at : {}".format( o_dir ) )
 
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser( description=\
@@ -167,9 +159,13 @@ if __name__ == "__main__":
     
     #   for image distorter (Blender)
     parser.add_argument( '--frames', type=int, nargs=2, default=[ 1, 3 ],
+<<<<<<< HEAD
             help='target frame range [first last], default is 1 -> 3.' )   
     parser.add_argument( '--samples', type=int, nargs=2, default=[ 0, 1 ],
             help='sample index range [first last], default is 0 -> 1.' )
+=======
+            help='target frame range [first last], default is 1 -> 3.' )
+>>>>>>> nikita
     parser.add_argument( '--wave_scale', type=float, default=0.0,
             help='scale of wave that distort the view. recommended values are between 3.2 - 8.0. \
                     this will be applied to **ALL** samples. if you are not certain, \
@@ -177,8 +173,11 @@ if __name__ == "__main__":
     parser.add_argument( '--gpu_id', type=int, default=-1,
             help='(CUDA only) gpu id to be used (will use this gpu only), use all that is available if not specified. \
                     No effect on non-NVIDIA system' )
+<<<<<<< HEAD
     parser.add_argument( '--output_dir', type=str, default='../../data',
             help='directory to place output images (in distorted/undistorted directories), default is ../../data.' )
+=======
+>>>>>>> nikita
 
     if '--' in sys.argv:
         args = parser.parse_args( sys.argv[sys.argv.index('--') + 1:] )
@@ -194,6 +193,10 @@ if __name__ == "__main__":
 
     frame_start, frame_end = args.frames
     sample_start, sample_end = args.samples
+<<<<<<< HEAD
+=======
+    sample_dir = os.path.abspath( bpy.path.abspath( '//' + args.sample_dir ) )
+>>>>>>> nikita
     wave_scale = args.wave_scale
     gpu_id = args.gpu_id
     output_dir = os.path.abspath( bpy.path.abspath( '//' + args.output_dir ) )
