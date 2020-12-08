@@ -284,6 +284,9 @@ def get_image(img_url):
     if not 'image' in img_resp.headers['content-type']:
         logging.debug("Not an image")
         return finish('failure')
+    elif not 'jpeg' in img_resp.headers['content-type']:
+        logging.debug("Not a supported image (JPEG)")
+        return finish('failure')
 
     if (len(img_resp.content) < 1000):
         return finish('failure')
@@ -331,9 +334,12 @@ for class_wnid in classes_to_scrape:
 
     urls = [url.decode('utf-8') for url in resp.content.splitlines()]
 
-    #for url in  urls:
-    #    get_image(url)
-
-    print(f"Multiprocessing workers: {args.multiprocessing_workers}")
-    with Pool(processes=args.multiprocessing_workers) as p:
-        p.map(get_image,urls)
+    if os.name == 'nt':
+        print("Windows does not support multiprocessing in python. \
+            Fallback to single thread work.")
+        for url in urls:
+            get_image(url)
+    else:
+        print(f"Multiprocessing workers: {args.multiprocessing_workers}")
+        with Pool(processes=args.multiprocessing_workers) as p:
+            p.map(get_image,urls)

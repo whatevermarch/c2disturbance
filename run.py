@@ -17,7 +17,7 @@ BLENDER_SAMPLE_NAME_FORMAT = "{:04d}.jpg"
 BLENDER_SAMPLES_REL_PATH = 'samples'
 BLENDER_OUTPUT_REL_PATH = 'output'
 BLENDER_BLEND_REL_PATH = 'water_noise.blend'
-BLENDER_RENDER_REL_PATH = os.path.join('scripts', 'main_render.py')
+BLENDER_SCRIPT_REL_PATH = os.path.join('scripts', 'main_render.py')
 BLENDER_SAMPLES_PATH = os.path.join(BLENDER_ROOT, BLENDER_SAMPLES_REL_PATH)
 
 def downloadClasses(downloader_path, n_classes, n_images_per_class, data_root):
@@ -51,7 +51,7 @@ def generateDistortedImages(blender_root, rel_samples_dir,
         rel_output_dir, n_samples, n_frames_per_sample, wave_scale):
     args_list = ['blender',
                 '-b', BLENDER_BLEND_REL_PATH,
-                '-P', BLENDER_RENDER_REL_PATH,
+                '-P', BLENDER_SCRIPT_REL_PATH,
                 '--',
                 '--sample_dir', rel_samples_dir,
                 '--output_dir', rel_output_dir,
@@ -63,26 +63,34 @@ def generateDistortedImages(blender_root, rel_samples_dir,
 
 def cleanUp(dirs):
     for d in dirs:
-        subprocess.call('rm -r {}'.format(d), shell=True)
+        if os.name == 'nt':
+            subprocess.call('rmdir /s /q {}'.format(d), shell=True)
+        else:
+            subprocess.call('rm -r {}'.format(d), shell=True)
     print('Cleaned up')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--number_of_classes', default = -1, type=int)
-    parser.add_argument('--images_per_class', default = 8, type=int)
+    parser.add_argument('--images_per_class', default = 1, type=int)
     parser.add_argument('--total_images', default = -1, type=int)
     parser.add_argument('--frames_per_image', default = 30, type=int)
     parser.add_argument('--wave_scale', default = 0.0, type=float)
     args = parser.parse_known_args()[0]
 
     if args.total_images <= 0 and args.number_of_classes <= 0:
-        print("--total_images or --number_of_classes must be specified")
+        print("either --total_images or --number_of_classes must be specified")
         exit()
 
-    if args.total_images <= 0:
+    # if args.total_images <= 0:
+    #     args.total_images = args.number_of_classes * args.images_per_class
+    # elif args.number_of_classes == -1:
+    
+    # prefer the number of classes over total images
+    if args.number_of_classes <= 0:
+        args.number_of_classes = ( args.total_images + args.images_per_class - 1 ) // args.images_per_class
+    else:
         args.total_images = args.number_of_classes * args.images_per_class
-    elif args.number_of_classes == -1:
-        args.number_of_classes = args.total_images // args.images_per_class + 1
 
     downloadClasses(
             DOWNLOADER_PATH,

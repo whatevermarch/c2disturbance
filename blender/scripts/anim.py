@@ -25,7 +25,7 @@ def set_target_frame( f_start, f_end ):
     bpy.context.scene.frame_end = f_end
 
 #   setup keyframe parameters FOR musgrave texture nodes
-def setup_musgrave( node_1, node_2, wave_scale=0.0 ):
+def set_param_musgrave( node_1, node_2, wave_scale=0.0 ):
         
     #   random W-param for this sample
     m1_start = random.uniform( w_init_min, w_init_max )
