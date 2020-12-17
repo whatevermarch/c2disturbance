@@ -5,7 +5,7 @@ import random
 import shutil
 
 INPUT_PATH = os.path.join("blender", "output")
-DATA_PATH = "data"
+DATA_PATH = "data_gen"
 TEST_PATH = os.path.join(DATA_PATH, "Water_Real", "test")
 TRAIN_PATH = os.path.join(DATA_PATH, "Water", "train")
 VAL_PATH = os.path.join(DATA_PATH, "Water", "test")
@@ -32,11 +32,13 @@ def prepareTrainData(input_path, imgs, dist_path, orig_path):
         old_dist = os.path.join(
                 input_path, 'distorted',
                 sample, frame)
-        new_dist = os.path.join(dist_path, sample + '_' + frame)
+        os.makedirs(os.path.join(dist_path, sample), exist_ok=True)
+        new_dist = os.path.join(dist_path, sample, frame)
         old_orig = os.path.join(
                 input_path, 'undistorted',
                 sample + '.' + frame.split('.')[-1])
-        new_orig = os.path.join(orig_path, sample + '_' + frame)
+        new_orig = os.path.join(orig_path, sample, frame)
+        os.makedirs(os.path.join(orig_path, sample), exist_ok=True)
         shutil.copy(old_dist, new_dist)
         shutil.copy(old_orig, new_orig)
 
