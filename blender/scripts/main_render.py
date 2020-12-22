@@ -65,7 +65,7 @@ def init( f_start, f_end, gpu_id ):
     device.customize( gpu_id )
 
 #   render, ain't nothing else
-def render( s_start, s_end, s_dir, o_dir, wave_scale ):
+def render( s_start, s_end, s_dir, o_dir, wave_scale, amplifier ):
 
     assert s_start <= s_end, "First sample is not followed by last sample."
     assert s_start >= 0, "First sample index cannot be lower than 0."
@@ -76,9 +76,9 @@ def render( s_start, s_end, s_dir, o_dir, wave_scale ):
     materials = bpy.data.materials
     node_tex = materials['Material.Text'].node_tree.nodes["Image Texture"]
     mat_water = materials['Material.Water']
-    node_musgrave_1 = mat_water.node_tree.nodes["Musgrave Texture"]
-    node_musgrave_2 = mat_water.node_tree.nodes["Musgrave Texture.001"]
-    node_mix = mat_water.node_tree.nodes["Mix"]
+    node_musgrave_c = mat_water.node_tree.nodes["Musgrave.Coarse"]
+    node_musgrave_f = mat_water.node_tree.nodes["Musgrave.Fine"]
+    node_amplifier = mat_water.node_tree.nodes["Amplifier"]
     node_out = mat_water.node_tree.nodes["Material Output"]
 
     #   define scene to be rendered
@@ -106,20 +106,21 @@ def render( s_start, s_end, s_dir, o_dir, wave_scale ):
 
         logging.debug( "Initialize animation parameter..." )
 
-        #   setup W-param for this sample
-        anim.set_param_musgrave( node_musgrave_1, node_musgrave_2, wave_scale )
+        #   setup material parameters
+        anim.set_param_musgrave( node_musgrave_c, node_musgrave_f, wave_scale )
+        anim.set_param_amplifier( node_amplifier, amplifier )
 
         logging.debug( "Render..." )
 
         #   unlink musgrave texture (displacement controller)
-        if node_mix.outputs[0].is_linked:
-            mat_water.node_tree.links.remove( node_mix.outputs[0].links[0] )
+        if node_amplifier.outputs[0].is_linked:
+            mat_water.node_tree.links.remove( node_amplifier.outputs[0].links[0] )
 
         #   render undistorted version first
         render_undistorted( scene, s_idx, o_dir )
 
         #   relink musgrave texture
-        mat_water.node_tree.links.new( node_mix.outputs[0], node_out.inputs[2] )
+        mat_water.node_tree.links.new( node_amplifier.outputs[0], node_out.inputs[2] )
 
         #   then render distorted version
         render_distorted( scene, s_idx, o_dir )
@@ -151,6 +152,10 @@ if __name__ == "__main__":
             help='scale of wave that distort the view. recommended values are between 3.2 - 8.0. \
                     this will be applied to **ALL** samples. if you are not certain, \
                     leave this parameter to let the script properly randomize for **EACH** sample.' )
+    parser.add_argument( '--amplifier', type=float, default=0.0,
+            help='distortion amplifier. recommended values are between 0.135 - 0.572. \
+                    this will be applied to **ALL** samples. if you are not certain, \
+                    leave this parameter to let the script properly randomize for **EACH** sample.' )
     parser.add_argument( '--gpu_id', type=int, default=-1,
             help='(CUDA only) gpu id to be used (will use this gpu only), use all that is available if not specified. \
                     No effect on non-NVIDIA system' )
@@ -166,8 +171,9 @@ if __name__ == "__main__":
     sample_start, sample_end = args.samples
     sample_dir = os.path.abspath( bpy.path.abspath( '//' + args.sample_dir ) )
     wave_scale = args.wave_scale
+    amplifier = args.amplifier
     gpu_id = args.gpu_id
     output_dir = os.path.abspath( bpy.path.abspath( '//' + args.output_dir ) )
 
     init( frame_start, frame_end, gpu_id )
-    render( sample_start, sample_end, sample_dir, output_dir, wave_scale )
+    render( sample_start, sample_end, sample_dir, output_dir, wave_scale, amplifier )

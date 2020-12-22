@@ -48,7 +48,7 @@ def prepareBlenderData(input_dir, output_dir, n_samples, n_samples_per_class):
             next_sample_id += 1
 
 def generateDistortedImages(blender_root, rel_samples_dir,
-        rel_output_dir, n_samples, n_frames_per_sample, wave_scale, used_gpus):
+        rel_output_dir, n_samples, n_frames_per_sample, wave_scale, amplifier, used_gpus):
     args_list = ['blender',
                 '-b', BLENDER_BLEND_REL_PATH,
                 '-P', BLENDER_SCRIPT_REL_PATH,
@@ -57,12 +57,15 @@ def generateDistortedImages(blender_root, rel_samples_dir,
                 '--output_dir', rel_output_dir,
                 '--samples', 0, n_samples - 1,
                 '--frames', 1, n_frames_per_sample,
+                '--amplifier', amplifier,
                 '--wave_scale', wave_scale]
     
+    #   if no GPU specified, use all
     if not used_gpus:
         args = ' '.join(str(arg) for arg in args_list)
         subprocess.call(args, shell=True, cwd=blender_root)
     else:
+        #   determine the amount of samples on which each GPU will work
         num_gpus = len(used_gpus)
         n_samples_per_gpu = [ n_samples // num_gpus ] * num_gpus
         rem_n_samples = n_samples % num_gpus
@@ -72,6 +75,7 @@ def generateDistortedImages(blender_root, rel_samples_dir,
             n_samples_per_gpu[i] += 1
             rem_n_samples -= 1
 
+        #   launch separated processes for each GPU defined
         logs = []
         procs = []
         args_list.extend( [ '--gpu_id', -1 ] )
@@ -87,6 +91,7 @@ def generateDistortedImages(blender_root, rel_samples_dir,
             args_list[11] = args_list[12] + 1
             args_list[12] = args_list[11] + n_samples_per_gpu.pop() - 1
 
+        #   synchronize all processes and close logging file descriptors
         for i in range( num_gpus ):
             procs[i].wait()
             logs[i].close()
@@ -105,7 +110,14 @@ if __name__ == "__main__":
     parser.add_argument('--images_per_class', default = 1, type=int)
     parser.add_argument('--total_images', default = -1, type=int)
     parser.add_argument('--frames_per_image', default = 30, type=int)
-    parser.add_argument('--wave_scale', default = 0.0, type=float)
+    parser.add_argument('--wave_scale', default = 0.0, type=float, 
+        help='scale of wave that distort the view. recommended values are between 3.2 - 8.0. \
+                    this will be applied to **ALL** samples. if you are not certain, \
+                    leave this parameter to let the script properly randomize for **EACH** sample.' )
+    parser.add_argument('--amplifier', default = 0.0, type=float,
+        help='distortion amplifier. recommended values are between 0.135 - 0.572. \
+                    this will be applied to **ALL** samples. if you are not certain, \
+                    leave this parameter to let the script properly randomize for **EACH** sample.' )
     parser.add_argument('--gpus', default = [], type=int, nargs='+', \
         help='identify gpu index (CUDA) used to render the distortion (e.g. --gpus 0 1 2). \
             use \'nvidia-smi\' to list all available gpu indices in the current system.')
@@ -147,6 +159,7 @@ if __name__ == "__main__":
             args.total_images,
             args.frames_per_image,
             args.wave_scale,
+            args.amplifier,
             args.gpus)
 
     cleanUp([DOWNLOADS_PATH, BLENDER_SAMPLES_PATH])
