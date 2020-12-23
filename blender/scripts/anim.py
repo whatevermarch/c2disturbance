@@ -13,8 +13,8 @@ scale_c_min = 3.2
 scale_c_max = 8.0
 
 #   set the range of appropriate amplifier factor
-amp_min = 0.135
-amp_max = 0.572
+amp_min = 0.17
+amp_max = 0.56
 
 
 #   define animation frame range to be rendered
