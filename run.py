@@ -48,7 +48,7 @@ def prepareBlenderData(input_dir, output_dir, n_samples, n_samples_per_class):
             next_sample_id += 1
 
 def generateDistortedImages(blender_root, rel_samples_dir,
-        rel_output_dir, n_samples, n_frames_per_sample, wave_scale):
+        rel_output_dir, n_samples, n_frames_per_sample, wave_scale, used_gpus):
     args_list = ['blender',
                 '-b', BLENDER_BLEND_REL_PATH,
                 '-P', BLENDER_SCRIPT_REL_PATH,
@@ -58,8 +58,38 @@ def generateDistortedImages(blender_root, rel_samples_dir,
                 '--samples', 0, n_samples - 1,
                 '--frames', 1, n_frames_per_sample,
                 '--wave_scale', wave_scale]
-    args = ' '.join(str(arg) for arg in args_list)
-    subprocess.call(args, shell=True, cwd=blender_root)
+    
+    if not used_gpus:
+        args = ' '.join(str(arg) for arg in args_list)
+        subprocess.call(args, shell=True, cwd=blender_root)
+    else:
+        num_gpus = len(used_gpus)
+        n_samples_per_gpu = [ n_samples // num_gpus ] * num_gpus
+        rem_n_samples = n_samples % num_gpus
+        for i in range( num_gpus ):
+            if rem_n_samples == 0:
+                break
+            n_samples_per_gpu[i] += 1
+            rem_n_samples -= 1
+
+        logs = []
+        procs = []
+        args_list.extend( [ '--gpu_id', -1 ] )
+        args_list[12] = n_samples_per_gpu[-1] - 1
+        for i in range( num_gpus ):
+            args_list[-1] = used_gpus[i]
+            args = ' '.join(str(arg) for arg in args_list)
+
+            logs.append( open( os.path.join( BLENDER_ROOT, BLENDER_OUTPUT_REL_PATH, "render.log." + str(i + 1) ) , "w" ) )
+
+            procs.append( subprocess.Popen(args, shell=True, cwd=blender_root, stdout=logs[-1], stderr=sys.stderr) )
+
+            args_list[11] = args_list[12] + 1
+            args_list[12] = args_list[11] + n_samples_per_gpu.pop() - 1
+
+        for i in range( num_gpus ):
+            procs[i].wait()
+            logs[i].close()
 
 def cleanUp(dirs):
     for d in dirs:
@@ -76,6 +106,9 @@ if __name__ == "__main__":
     parser.add_argument('--total_images', default = -1, type=int)
     parser.add_argument('--frames_per_image', default = 30, type=int)
     parser.add_argument('--wave_scale', default = 0.0, type=float)
+    parser.add_argument('--gpus', default = [], type=int, nargs='+', \
+        help='identify gpu index (CUDA) used to render the distortion (e.g. --gpus 0 1 2). \
+            use \'nvidia-smi\' to list all available gpu indices in the current system.')
     args = parser.parse_known_args()[0]
 
     if args.total_images <= 0 and args.number_of_classes <= 0:
@@ -91,6 +124,11 @@ if __name__ == "__main__":
         args.number_of_classes = ( args.total_images + args.images_per_class - 1 ) // args.images_per_class
     else:
         args.total_images = args.number_of_classes * args.images_per_class
+
+    for gpu in args.gpus:
+        if gpu < 0:
+            print("--gpus specified invalid GPU index")
+            exit()
 
     downloadClasses(
             DOWNLOADER_PATH,
@@ -108,6 +146,7 @@ if __name__ == "__main__":
             BLENDER_OUTPUT_REL_PATH,
             args.total_images,
             args.frames_per_image,
-            args.wave_scale)
+            args.wave_scale,
+            args.gpus)
 
     cleanUp([DOWNLOADS_PATH, BLENDER_SAMPLES_PATH])
