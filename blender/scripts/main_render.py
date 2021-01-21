@@ -5,6 +5,7 @@ import os.path
 import logging
 import time
 import argparse
+import json
 
 #   import custom modules
 device = bpy.data.texts.load( bpy.path.abspath( "//scripts/device.py" ) ).as_module()
@@ -65,7 +66,7 @@ def init( f_start, f_end, gpu_id ):
     device.customize( gpu_id )
 
 #   render, ain't nothing else
-def render( s_start, s_end, s_dir, o_dir, wave_scale ):
+def render( s_start, s_end, s_dir, o_dir, wave_scales, amplifiers ):
 
     assert s_start <= s_end, "First sample is not followed by last sample."
     assert s_start >= 0, "First sample index cannot be lower than 0."
@@ -76,9 +77,9 @@ def render( s_start, s_end, s_dir, o_dir, wave_scale ):
     materials = bpy.data.materials
     node_tex = materials['Material.Text'].node_tree.nodes["Image Texture"]
     mat_water = materials['Material.Water']
-    node_musgrave_1 = mat_water.node_tree.nodes["Musgrave Texture"]
-    node_musgrave_2 = mat_water.node_tree.nodes["Musgrave Texture.001"]
-    node_mix = mat_water.node_tree.nodes["Mix"]
+    node_musgrave_c = mat_water.node_tree.nodes["Musgrave.Coarse"]
+    node_musgrave_f = mat_water.node_tree.nodes["Musgrave.Fine"]
+    node_amplifier = mat_water.node_tree.nodes["Amplifier"]
     node_out = mat_water.node_tree.nodes["Material Output"]
 
     #   define scene to be rendered
@@ -106,20 +107,23 @@ def render( s_start, s_end, s_dir, o_dir, wave_scale ):
 
         logging.debug( "Initialize animation parameter..." )
 
-        #   setup W-param for this sample
-        anim.set_param_musgrave( node_musgrave_1, node_musgrave_2, wave_scale )
+        #   setup material parameters
+        # anim.set_param_musgrave( node_musgrave_c, node_musgrave_f, wave_scale )
+        # anim.set_param_amplifier( node_amplifier, amplifier )
+        anim.set_param_musgrave( node_musgrave_c, node_musgrave_f, wave_scales.pop(0) )
+        anim.set_param_amplifier( node_amplifier, amplifiers.pop(0) )
 
         logging.debug( "Render..." )
 
         #   unlink musgrave texture (displacement controller)
-        if node_mix.outputs[0].is_linked:
-            mat_water.node_tree.links.remove( node_mix.outputs[0].links[0] )
+        if node_amplifier.outputs[0].is_linked:
+            mat_water.node_tree.links.remove( node_amplifier.outputs[0].links[0] )
 
         #   render undistorted version first
         render_undistorted( scene, s_idx, o_dir )
 
         #   relink musgrave texture
-        mat_water.node_tree.links.new( node_mix.outputs[0], node_out.inputs[2] )
+        mat_water.node_tree.links.new( node_amplifier.outputs[0], node_out.inputs[2] )
 
         #   then render distorted version
         render_distorted( scene, s_idx, o_dir )
@@ -148,12 +152,19 @@ if __name__ == "__main__":
     parser.add_argument( '--sample_dir', type=str, default='../../data/samples',
             help='directory containing sample images (with format ###.png), default is ../../data/samples.' )
     parser.add_argument( '--wave_scale', type=float, default=0.0,
-            help='scale of wave that distort the view. recommended values are between 3.2 - 8.0. \
-                    this will be applied to **ALL** samples. if you are not certain, \
-                    leave this parameter to let the script properly randomize for **EACH** sample.' )
+            help='''scale of wave that distort the view. recommended values are between 3.2 - 8.0. 
+                    this will be applied to **ALL** samples. if you are not certain, 
+                    leave this parameter to let the script properly randomize for **EACH** sample.''' )
+    parser.add_argument( '--amplifier', type=float, default=0.0,
+            help='''distortion amplifier. recommended values are between 0.17 - 0.56. 
+                    this will be applied to **ALL** samples. if you are not certain, 
+                    leave this parameter to let the script properly randomize for **EACH** sample.''' )
+    parser.add_argument( '--param_file', type=str, default='',
+            help='''path to JSON file containing wave scale and amplifier parameter list. note that
+                    the length of parameter list must compatible with given sample indices.''' )
     parser.add_argument( '--gpu_id', type=int, default=-1,
-            help='(CUDA only) gpu id to be used (will use this gpu only), use all that is available if not specified. \
-                    No effect on non-NVIDIA system' )
+            help='''(CUDA only) gpu id to be used (will use this gpu only), use all that is available if not specified. 
+                    No effect on non-NVIDIA system''' )
     parser.add_argument( '--output_dir', type=str, default='../../data',
             help='directory to place output images (in distorted/undistorted directories), default is ../../data.' )
 
@@ -166,8 +177,32 @@ if __name__ == "__main__":
     sample_start, sample_end = args.samples
     sample_dir = os.path.abspath( bpy.path.abspath( '//' + args.sample_dir ) )
     wave_scale = args.wave_scale
+    amplifier = args.amplifier
     gpu_id = args.gpu_id
     output_dir = os.path.abspath( bpy.path.abspath( '//' + args.output_dir ) )
+    param_file = os.path.abspath( bpy.path.abspath( '//' + args.param_file ) )
 
     init( frame_start, frame_end, gpu_id )
-    render( sample_start, sample_end, sample_dir, output_dir, wave_scale )
+    if len(param_file) == 0:
+        num_samples = sample_end - sample_start + 1
+        render( sample_start, sample_end, sample_dir, output_dir, [wave_scale] * num_samples, [amplifier] * num_samples )
+    else:
+        #   load parameters from file
+        with open( param_file, "r" ) as param_fp:
+            params = json.load( param_fp )
+        wave_scales_all = params['wave_scales']
+        amplifiers_all = params['amplifiers']
+
+        if len( wave_scales_all ) <= sample_end:
+            print("ERROR! the number of distortion parameters (wave scale) does not match the number of samples.")
+            exit()
+        elif len( amplifiers_all ) <= sample_end:
+            print("ERROR! the number of distortion parameters (amplifier) does not match the number of samples.")
+            exit()
+        
+        #   select parameter array slices corresponding to the samples
+        wave_scales = wave_scales_all[sample_start:sample_end+1]
+        amplifiers = amplifiers_all[sample_start:sample_end+1]
+
+        render( sample_start, sample_end, sample_dir, output_dir, wave_scales, amplifiers )
+
