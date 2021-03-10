@@ -25,7 +25,7 @@ BLENDER_SAMPLES_PATH = os.path.join(BLENDER_ROOT, BLENDER_SAMPLES_REL_PATH)
 def downloadClasses(downloader_path, n_classes, n_images_per_class, data_root):
     args_list = ['python', DOWNLOADER_PATH,
                 '-number_of_classes', n_classes,
-                '-images_per_class', n_images_per_class,
+                '-images_per_class', n_images_per_class + 5,
                 '-data_root', data_root]
     args = ' '.join(str(arg) for arg in args_list)
     subprocess.call(args, shell=True)
@@ -37,6 +37,8 @@ def prepareBlenderData(input_dir, output_dir, n_samples, n_samples_per_class, wa
     params = {}
     params['wave_scales'] = [] if wave_scale == 0.0 else [wave_scale] * n_samples
     params['amplifiers'] = [] if amplifier == 0.0 else [amplifier] * n_samples
+
+    sm = 0
 
     next_sample_id = 0
     for cls in os.listdir(input_dir):
@@ -57,9 +59,16 @@ def prepareBlenderData(input_dir, output_dir, n_samples, n_samples_per_class, wa
 
             #   generate this sample's distortion parameter
             if wave_scale == 0.0:
-                params['wave_scales'].append( random.uniform( 3.2, 8.0 ) )
+                params['wave_scales'].append( random.uniform( 5.0, 6.5 ) )
             if amplifier == 0.0:
-                params['amplifiers'].append( random.uniform( 0.17, 0.56 ) )
+                params['amplifiers'].append( random.uniform( 0.4, 0.5 ) )
+        sm += len(samples)
+        #if (len(samples) < 10):
+        #    print(cls, len(samples))
+        #print(cls, len(samples))
+
+    print("XX: ", sm)
+    #print("YY: ", params["wave_scales"], len(params["amplifiers"]))
 
     #   save parameters as JSON file
     with open( os.path.join( BLENDER_ROOT, BLENDER_SAMPLE_PARAM_FILE_NAME ), "w" ) as param_fp:
@@ -67,7 +76,10 @@ def prepareBlenderData(input_dir, output_dir, n_samples, n_samples_per_class, wa
 
 def generateDistortedImages(blender_root, rel_samples_dir,
         rel_output_dir, n_samples, n_frames_per_sample, used_gpus):
-    args_list = ['blender',
+
+    args_list = [
+                #'blender',
+                '/opt/blender-2.83.7-linux64/blender',
                 '-b', BLENDER_BLEND_REL_PATH,
                 '-P', BLENDER_SCRIPT_REL_PATH,
                 '--',
@@ -107,6 +119,8 @@ def generateDistortedImages(blender_root, rel_samples_dir,
 
             args_list[11] = args_list[12] + 1
             args_list[12] = args_list[11] + n_samples_per_gpu.pop() - 1
+
+            print(n_samples_per_gpu[i], args_list)
 
         #   synchronize all processes and close logging file descriptors
         for i in range( num_gpus ):
@@ -159,11 +173,11 @@ if __name__ == "__main__":
             print("--gpus specified invalid GPU index")
             exit()
 
-    downloadClasses(
-            DOWNLOADER_PATH,
-            args.number_of_classes,
-            args.images_per_class,
-            DOWNLOADS_ROOT)
+    #downloadClasses(
+    #        DOWNLOADER_PATH,
+    #        args.number_of_classes,
+    #        args.images_per_class,
+    #        DOWNLOADS_ROOT)
     prepareBlenderData(
             DOWNLOADS_PATH,
             BLENDER_SAMPLES_PATH,
@@ -179,4 +193,4 @@ if __name__ == "__main__":
             args.frames_per_image,
             args.gpus)
 
-    cleanUp([DOWNLOADS_PATH, BLENDER_SAMPLES_PATH])
+    #cleanUp([DOWNLOADS_PATH, BLENDER_SAMPLES_PATH])
