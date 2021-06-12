@@ -15,7 +15,7 @@ information that is still recognizable as the object itself.
 
 ### Run 
 
-'''bash 
+``` bash 
 python ./run.py --total_images 4 --images_per_class 2 --frames_per_image 3
 
-'''
+```
