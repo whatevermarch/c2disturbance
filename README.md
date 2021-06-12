@@ -11,9 +11,10 @@ undistorted result does not perfectly preserve the original object shape without
 disturbance, our machine learning model could reconstruct plausible geometry
 information that is still recognizable as the object itself.
 
+## Algorithm Sketch
 ![Capture](https://user-images.githubusercontent.com/52937810/121777436-506e4600-cb92-11eb-9eef-b8cf2243840e.PNG)
 
-### Run 
+### Usage 
 
 ``` bash 
 python ./run.py --total_images 4 --images_per_class 2 --frames_per_image 3
